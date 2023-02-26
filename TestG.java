@@ -1,17 +1,13 @@
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import javax.swing.*;
 
 public class TestG extends JFrame {
-    JLabel Status;
     JTextField timein, timeout, totalhours, overtime, tardiness;
-    JButton calculateButton, clear;
-
+    JLabel statusLabel;
+    
     public TestG() {
-    	setTitle("Time Log");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setResizable(false);
-        
+        super("Time Log"); 
         timein = new JTextField(10);
         timeout = new JTextField(10);
         totalhours = new JTextField(10);
@@ -20,12 +16,13 @@ public class TestG extends JFrame {
         overtime.setEditable(false);
         tardiness = new JTextField(10);
         tardiness.setEditable(false);
-        Status = new JLabel("");
-        calculateButton = new JButton("Calculate");
-        calculateButton.addActionListener(new calculateButtonListener());
-        clear = new JButton("Clear");
-        clear.addActionListener(new ClearButtonListener());
+        statusLabel = new JLabel("");
         
+        JButton calculateButton = new JButton("Calculate");
+        calculateButton.addActionListener(new CalculateButtonListener());
+        JButton clearButton = new JButton("Clear");
+        clearButton.addActionListener(new ClearButtonListener());
+       
         JPanel contentPane = new JPanel(new GridLayout(7, 15, 10, 10));
         contentPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contentPane.add(new JLabel("Time In: "));
@@ -39,74 +36,76 @@ public class TestG extends JFrame {
         contentPane.add(new JLabel("Tardiness: "));
         contentPane.add(tardiness);
         contentPane.add(new JLabel("Status: "));
-        contentPane.add(Status);
+        contentPane.add(statusLabel);
+        
         contentPane.add(calculateButton);
-        contentPane.add(clear);
+        contentPane.add(clearButton);
         setContentPane(contentPane);
         
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setVisible(true);
     }
-
-    private class calculateButtonListener implements ActionListener {
+    
+    private class CalculateButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             try {
+  
+                String inTimeString = timein.getText();
+                String outTimeString = timeout.getText();
+                int inTime = Integer.parseInt(inTimeString.replaceAll(":", ""));
+                int outTime = Integer.parseInt(outTimeString.replaceAll(":", ""));
+                
+                int totalMinutes = (outTime % 100 + 60 * (outTime / 100)) - (inTime % 100 + 60 * (inTime / 100));
+                double totalHours = (double) totalMinutes / 60.0;
 
-                String timeInStr = timein.getText();
-                String timeOutStr = timeout.getText();
+                totalhours.setText(String.format("%.2f", totalHours));
 
-                int timeIn = convertToMinutes(timeInStr);
-                int timeOut = convertToMinutes(timeOutStr);
-                int totalRenderedTime = timeOut - timeIn;
-                totalhours.setText("Overtime: " + totalRenderedTime / 60 + " hours " + totalRenderedTime % 60 + " minutes");
-
-                if (totalRenderedTime > 0) {
-                	double overtimehours = totalRenderedTime;
-                    if (totalRenderedTime > 540) {
-                        overtimehours = totalRenderedTime - 540;
-                        overtime.setText("Overtime: " + overtimehours / 60 + " hours " + overtimehours % 60 + " minutes");
-                        
-                    } else {
-                        totalhours.setText(totalRenderedTime / 60 + " hours " + totalRenderedTime % 60 + " minutes");
-                    }
+                if (totalHours > 9) {
+                	double overtimeHours = totalHours - 8.0;
+                    overtimeHours = Math.round(overtimeHours * 100.0) / 100.0;
+                    overtime.setText(String.valueOf(overtimeHours));
+                    tardiness.setText("0.00");
+                    statusLabel.setText("Overtime");
+                } else if (totalHours == 9) {
+                    overtime.setText("0.00");
+                    tardiness.setText("0.00");
+                    statusLabel.setText("On Time");
+                } else if (totalHours < 9 ) {
+                overtime.setText("0.00");
+                double result = 9 - totalHours;
+                tardiness.setText(String.valueOf(result));
+                statusLabel.setText("Late");
                 } else {
-                    totalhours.setText("Invalid Input: Time out should be later than time in.");
+                throw new IllegalArgumentException();
                 }
-            } catch (Exception ex) {
-                totalhours.setText("Invalid Input: Please input time in  and time out in 24 hour format.");
+                } catch (Exception ex) {
+                
+              
+                JOptionPane.showMessageDialog(TestG.this, "Invalid input. Please enter time in the format HH:MM AM/PM.");
                 timein.setText("");
                 timeout.setText("");
                 totalhours.setText("");
                 overtime.setText("");
-                Status.setText("");
-            }
+                tardiness.setText("");
+                statusLabel.setText("");
+      }
         }
     }
+    
     private class ClearButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             timein.setText("");
             timeout.setText("");
             totalhours.setText("");
             overtime.setText("");
-            Status.setText("");
+            tardiness.setText("");
+            statusLabel.setText("");
         }
     }
-
     
-    private int convertToMinutes(String timeStr) throws Exception {
-        String[] timeParts = timeStr.split(":");
-        if (timeParts.length != 2) {
-            throw new Exception();
-        }
-        int hours = Integer.parseInt(timeParts[0]);
-        int minutes = Integer.parseInt(timeParts[1]);
-        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-            throw new Exception();
-        }
-        return hours * 60 + minutes;
-    }
-
     public static void main(String[] args) {
         new TestG();
     }
